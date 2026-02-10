@@ -73,7 +73,7 @@ def build_report(data, sort_by="size"):
     """Build the report string from scan data."""
     lines = []
     lines.append("=" * 60)
-    lines.append("FOLDER SCAN REPORT")
+    lines.append("DIRECTORY SCAN SUMMARY")
     lines.append("=" * 60)
     lines.append(f"Folder:        {data['folder']}")
     lines.append(f"Scanned at:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
