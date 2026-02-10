@@ -17,7 +17,7 @@ def format_size(size_bytes):
     return f"{size_bytes:.2f} PB"
 
 
-def scan_folder(folder_path):
+def scan_folder(folder_path, filter_extensions=None):
     """Scan all files in the folder and return summary data."""
     if not os.path.isdir(folder_path):
         print(f"Error: '{folder_path}' is not a valid directory.", file=sys.stderr)
@@ -40,6 +40,10 @@ def scan_folder(folder_path):
             except OSError:
                 continue
 
+            ext = os.path.splitext(filename)[1].lower()
+            if filter_extensions and ext not in filter_extensions:
+                continue
+
             total_files += 1
             total_size += size
 
@@ -48,13 +52,13 @@ def scan_folder(folder_path):
                 largest_size = size
                 largest_file = rel_path
 
-            ext = os.path.splitext(filename)[1].lower()
             if not ext:
                 ext = "(no extension)"
             file_types[ext]["count"] += 1
             file_types[ext]["size"] += size
 
     return {
+        "filter": filter_extensions,
         "folder": os.path.abspath(folder_path),
         "total_subfolders": total_subfolders,
         "total_files": total_files,
@@ -73,6 +77,8 @@ def build_report(data):
     lines.append("=" * 60)
     lines.append(f"Folder:        {data['folder']}")
     lines.append(f"Scanned at:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    if data["filter"]:
+        lines.append(f"Filter:        {', '.join(sorted(data['filter']))}")
     lines.append("-" * 60)
     lines.append(f"Subfolders:    {data['total_subfolders']}")
     lines.append(f"Total files:   {data['total_files']}")
@@ -113,9 +119,18 @@ def main():
         default="folder_report.txt",
         help="Output report file path (default: folder_report.txt)",
     )
+    parser.add_argument(
+        "--ext",
+        nargs="+",
+        help="Filter by file extensions (e.g., --ext .py .txt .json)",
+    )
     args = parser.parse_args()
 
-    data = scan_folder(args.folder)
+    filter_extensions = None
+    if args.ext:
+        filter_extensions = {e if e.startswith(".") else f".{e}" for e in args.ext}
+
+    data = scan_folder(args.folder, filter_extensions)
     report = build_report(data)
 
     print(report)
