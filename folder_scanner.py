@@ -69,7 +69,7 @@ def scan_folder(folder_path, filter_extensions=None):
     }
 
 
-def build_report(data):
+def build_report(data, sort_by="size"):
     """Build the report string from scan data."""
     lines = []
     lines.append("=" * 60)
@@ -96,8 +96,14 @@ def build_report(data):
     lines.append(f"  {'Extension':<20} {'Count':>6}   {'Size':>12}")
     lines.append(f"  {'-'*20} {'-'*6}   {'-'*12}")
 
+    sort_keys = {
+        "size": lambda x: x[1]["size"],
+        "count": lambda x: x[1]["count"],
+        "name": lambda x: x[0],
+    }
+    reverse = sort_by != "name"
     sorted_types = sorted(
-        data["file_types"].items(), key=lambda x: x[1]["size"], reverse=True
+        data["file_types"].items(), key=sort_keys[sort_by], reverse=reverse
     )
     for ext, info in sorted_types:
         lines.append(
@@ -124,6 +130,12 @@ def main():
         nargs="+",
         help="Filter by file extensions (e.g., --ext .py .txt .json)",
     )
+    parser.add_argument(
+        "--sort",
+        choices=["size", "count", "name"],
+        default="size",
+        help="Sort file types by: size (default), count, or name",
+    )
     args = parser.parse_args()
 
     filter_extensions = None
@@ -131,7 +143,7 @@ def main():
         filter_extensions = {e if e.startswith(".") else f".{e}" for e in args.ext}
 
     data = scan_folder(args.folder, filter_extensions)
-    report = build_report(data)
+    report = build_report(data, sort_by=args.sort)
 
     print(report)
 
